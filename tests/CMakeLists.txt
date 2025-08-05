@@ -81,22 +81,25 @@ if(Catch2_FOUND)
     target_compile_definitions(Catch2::Catch2WithMain INTERFACE -DCLI11_CATCH3)
   endif()
 else()
-  message(STATUS "Downloading Catch2")
-
-  # FetchContent would be better, but requires newer CMake.
-  file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/catch2")
-  set(url https://github.com/philsquared/Catch/releases/download/v2.13.10/catch.hpp)
-  file(
-    DOWNLOAD ${url} "${CMAKE_CURRENT_BINARY_DIR}/catch2/catch.hpp"
-    STATUS status
-    EXPECTED_HASH SHA256=3725c0f0a75f376a5005dde31ead0feb8f7da7507644c201b814443de8355170)
-  list(GET status 0 error)
-  if(error)
-    message(FATAL_ERROR "Could not download ${url}, and Catch2 not found on your system.")
-  endif()
-  add_library(catch_main main.cpp catch.hpp)
+  # -------------------- 修改开始 --------------------
+  # 注释掉原始的下载逻辑，并改为使用你本地的文件
+  message(STATUS "Skipping download of Catch2 and using local file.")
+  # file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/catch2")
+  # set(url https://github.com/philsquared/Catch/releases/download/v2.13.10/catch.hpp)
+  # file(
+  #   DOWNLOAD ${url} "${CMAKE_CURRENT_BINARY_DIR}/catch2/catch.hpp"
+  #   STATUS status
+  #   EXPECTED_HASH SHA256=3725c0f0a75f376a5005dde31ead0feb8f7da7507644c201b814443de8355170)
+  # list(GET status 0 error)
+  # if(error)
+  #   message(FATAL_ERROR "Could not download ${url}, and Catch2 not found on your system.")
+  # endif()
+  # -------------------- 修改结束 --------------------
+  
+  # 使用你本地的catch.hpp文件路径
+  add_library(catch_main main.cpp /personal/catch.hpp)
   target_include_directories(catch_main PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}"
-                                               "${CMAKE_CURRENT_BINARY_DIR}")
+                                                "/personal") # 添加你本地文件的父目录作为包含路径
 endif()
 
 # Add special target that copies the data directory for tests
@@ -201,7 +204,7 @@ if(CMAKE_CXX_STANDARD GREATER 16)
 
   # Some platforms need to link to atomic
   file(WRITE "${CMAKE_BINARY_DIR}/test_atomic.cpp"
-       "#include <atomic>\n" "int main() { std::atomic<int64_t> i(0); i++; return 0; }\n")
+        "#include <atomic>\n" "int main() { std::atomic<int64_t> i(0); i++; return 0; }\n")
   try_compile(ATOMIC_BUILD_SUCCEEDED "${CMAKE_BINARY_DIR}" "${CMAKE_BINARY_DIR}/test_atomic.cpp")
   if(NOT ATOMIC_BUILD_SUCCEEDED)
     target_link_libraries(FuzzFailTest PRIVATE atomic)
@@ -214,7 +217,7 @@ endif()
 
 # Add -Wno-deprecated-declarations to DeprecatedTest
 set(no-deprecated-declarations $<$<CXX_COMPILER_ID:MSVC>:/wd4996>
-                               $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wno-deprecated-declarations>)
+                              $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wno-deprecated-declarations>)
 target_compile_options(DeprecatedTest PRIVATE ${no-deprecated-declarations})
 if(TARGET DeprecatedTest_Single)
   target_compile_options(DeprecatedTest_Single PRIVATE ${no-deprecated-declarations})
@@ -253,14 +256,14 @@ set_target_properties(informational PROPERTIES FOLDER "Tests/Apps")
 set_target_properties(
   informational
   PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}"
-             RUNTIME_OUTPUT_DIRECTORY_DEBUG "${CMAKE_BINARY_DIR}"
-             RUNTIME_OUTPUT_DIRECTORY_RELEASE "${CMAKE_BINARY_DIR}"
-             RUNTIME_OUTPUT_DIRECTORY_RELWITHDEBINFO "${CMAKE_BINARY_DIR}"
-             RUNTIME_OUTPUT_DIRECTORY_MINSIZEREL "${CMAKE_BINARY_DIR}")
+            RUNTIME_OUTPUT_DIRECTORY_DEBUG "${CMAKE_BINARY_DIR}"
+            RUNTIME_OUTPUT_DIRECTORY_RELEASE "${CMAKE_BINARY_DIR}"
+            RUNTIME_OUTPUT_DIRECTORY_RELWITHDEBINFO "${CMAKE_BINARY_DIR}"
+            RUNTIME_OUTPUT_DIRECTORY_MINSIZEREL "${CMAKE_BINARY_DIR}")
 
 # Adding this printout to CTest
 file(WRITE "${PROJECT_BINARY_DIR}/CTestCustom.cmake"
-     "set(CTEST_CUSTOM_PRE_TEST \"${CMAKE_BINARY_DIR}/informational\")")
+      "set(CTEST_CUSTOM_PRE_TEST \"${CMAKE_BINARY_DIR}/informational\")")
 
 target_compile_definitions(informational PRIVATE ${boost-optional-def})
 target_compile_definitions(OptionalTest PRIVATE ${boost-optional-def})
